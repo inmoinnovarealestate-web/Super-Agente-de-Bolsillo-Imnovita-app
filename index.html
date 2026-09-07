@@ -367,11 +367,54 @@
       { servicio: "Compromiso Bilateral de Compraventa", precio: "150$", notas: "Redacción e inspección jurídica" },
       { servicio: "Venta Registrada (Valencia / San Diego)", precio: "350$", notas: "Acompañamiento ante Registro Público" }
     ];
-    function inicializarSistemaRemoto() {
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run.withSuccessHandler(function(res) {
-          if (res && res.exito && res.datos && res.datos.length > 0) {
-            listaGlosario = res.datos;
+// NUEVA CONEXIÓN VÍA FETCH CON APPS SCRIPT (PWA GITHUB)
+const URL_API_SHEETS = "https://script.google.com/macros/s/AKfycbyota3EIq9NlNbaMwg6XQYFCvRA0JmLUzVdZ-tck-32xj9R8LtZAdUTarHsrAlQ-EKC/exec";
+
+function inicializarSistemaRemoto() {
+  fetch(URL_API_SHEETS)
+    .then(response => response.json())
+    .then(res => {
+      console.log("Conexión exitosa con el backend:", res);
+      // Si la respuesta trae datos de glosario, los carga
+      if (res && res.datos && res.datos.length > 0) {
+        listaGlosario = res.datos;
+      }
+      renderizarGlosario();
+    })
+    .catch(error => {
+      console.error("Error al conectar con la base de datos:", error);
+      renderizarGlosario();
+    });
+}
+
+function cargarNotasRemoto() {
+  // Petición fetch para recuperar notas guardadas
+  fetch(URL_API_SHEETS + "?accion=cargarNotas")
+    .then(response => response.json())
+    .then(res => {
+      if (res && res.datos) {
+        return res.datos;
+      }
+      return [];
+    })
+    .catch(err => {
+      console.error("No se pudieron cargar las notas", err);
+      return [];
+    });
+}
+
+function guardarNotasRemoto(lista) {
+  // Petición fetch para enviar notas actualizadas al servidor
+  fetch(URL_API_SHEETS, {
+    method: "POST",
+    body: JSON.stringify({ accion: "guardarNotas", datos: lista })
+  })
+  .then(response => response.json())
+  .then(res => {
+    console.log("Notas guardadas correctamente en la nube");
+  })
+  .catch(err => console.error("Error al guardar notas", err));
+};
           }
           renderizarGlosario();
         }).cargarGlosarioRemoto();
